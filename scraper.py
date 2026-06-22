@@ -21,10 +21,6 @@ PAGES_TO_SCRAPE = [
         "url"  : "https://www.upmin.edu.ph"
     },
     {
-        "label": "About UP Mindanao - Organization Chart", # This page is only an image, so it may not yield much text content.
-        "url"  : "https://upmin.edu.ph/about-us/organization/"
-    },
-    {
         "label": "About UP Mindanao - Officials",
         "url"  : "https://upmin.edu.ph/about-us/administration/"
     },
@@ -36,6 +32,7 @@ PAGES_TO_SCRAPE = [
         "label": "UP Mindanao - Academic Programs",
         "url"  : "https://upmin.edu.ph/academics/academic-programs/"
     },
+    # add more pages as needed
 ]
 
 def scrape_page(label, url):
