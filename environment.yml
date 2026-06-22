@@ -1,0 +1,9 @@
+name: up-chatbot
+channels:
+  - defaults
+dependencies:
+  - python=3.11
+  - pip
+  - pip:
+    - openai
+    - python-dotenv
