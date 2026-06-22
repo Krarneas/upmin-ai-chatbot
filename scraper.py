@@ -21,7 +21,7 @@ PAGES_TO_SCRAPE = [
         "url"  : "https://www.upmin.edu.ph"
     },
     {
-        "label": "About UP Mindanao - Officials",
+        "label": "About UP Mindanao - Officials", #does not contain some names of the officials
         "url"  : "https://upmin.edu.ph/about-us/administration/"
     },
     {
