@@ -1,5 +1,6 @@
 import html
 import os
+import re
 
 import streamlit as st
 from dotenv import load_dotenv
@@ -21,15 +22,52 @@ client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 st.markdown(
     """
 <style>
+    :root {
+        --up-maroon: #7b1113;
+        --up-maroon-2: #a32020;
+        --up-gold: #f4c95d;
+        --ink: #1c1716;
+        --muted: #776b68;
+        --paper: #fffaf1;
+        --panel: rgba(255, 250, 241, 0.86);
+        --line: rgba(123, 17, 19, 0.14);
+        --shadow: 0 24px 70px rgba(82, 35, 25, 0.16);
+    }
+
     .stApp {
-        background-color: #f0ede8;
-        font-family: 'Segoe UI', sans-serif;
+        background:
+            radial-gradient(circle at 14% 10%, rgba(244, 201, 93, 0.34), transparent 30%),
+            radial-gradient(circle at 88% 6%, rgba(123, 17, 19, 0.18), transparent 34%),
+            linear-gradient(135deg, #fff8eb 0%, #f6eee1 48%, #efe2d1 100%);
+        color: var(--ink);
+        font-family: "Aptos", "Segoe UI", sans-serif;
     }
 
     #MainMenu, footer, header { visibility: hidden; }
 
+    .block-container {
+        max-width: 980px;
+        padding-top: 42px;
+        padding-bottom: 112px;
+    }
+
+    .stApp::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        background-image:
+            linear-gradient(rgba(123, 17, 19, 0.035) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(123, 17, 19, 0.035) 1px, transparent 1px);
+        background-size: 34px 34px;
+        mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.75), transparent 72%);
+    }
+
     section[data-testid="stSidebar"] {
-        background-color: #7b1113;
+        background:
+            linear-gradient(165deg, rgba(123, 17, 19, 0.98), rgba(92, 14, 18, 0.96)),
+            radial-gradient(circle at top left, rgba(244, 201, 93, 0.22), transparent 36%);
+        border-right: 1px solid rgba(255, 255, 255, 0.18);
     }
     section[data-testid="stSidebar"] * {
         color: #ffffff !important;
@@ -37,45 +75,142 @@ st.markdown(
     section[data-testid="stSidebar"] hr {
         border-color: rgba(255,255,255,0.25) !important;
     }
+    section[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p,
+    section[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] li {
+        color: rgba(255, 255, 255, 0.78) !important;
+        line-height: 1.6;
+    }
     section[data-testid="stSidebar"] .stButton > button {
-        background-color: rgba(255,255,255,0.15);
+        background-color: rgba(255,255,255,0.12);
         color: #ffffff !important;
-        border: 1px solid rgba(255,255,255,0.35);
-        border-radius: 8px;
+        border: 1px solid rgba(255,255,255,0.28);
+        border-radius: 999px;
         width: 100%;
-        padding: 8px;
+        padding: 0.68rem 1rem;
         font-size: 0.9rem;
+        font-weight: 700;
         cursor: pointer;
+        transition: transform 0.18s ease, background 0.18s ease, border-color 0.18s ease;
     }
     section[data-testid="stSidebar"] .stButton > button:hover {
-        background-color: rgba(255,255,255,0.25);
+        background-color: rgba(255,255,255,0.24);
+        border-color: rgba(244, 201, 93, 0.72);
+        transform: translateY(-1px);
+    }
+
+    .sidebar-kicker {
+        color: var(--up-gold) !important;
+        font-size: 0.76rem;
+        font-weight: 800;
+        letter-spacing: 0.14em;
+        margin-bottom: 0.35rem;
+        text-transform: uppercase;
+    }
+
+    .sidebar-title {
+        font-size: 1.55rem;
+        font-weight: 850;
+        line-height: 1.05;
+        margin-bottom: 1.1rem;
+    }
+
+    .sidebar-card {
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        border-radius: 22px;
+        padding: 16px;
+        margin: 18px 0;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.11);
+    }
+
+    .sidebar-card strong {
+        color: #ffffff !important;
+        display: block;
+        margin-bottom: 0.4rem;
+    }
+
+    .sidebar-card ul {
+        margin-bottom: 0;
+        padding-left: 1.1rem;
     }
 
     .header-banner {
-        background: linear-gradient(135deg, #7b1113, #a31f21);
-        color: white;
-        padding: 22px 28px;
-        border-radius: 12px;
-        margin-bottom: 24px;
+        position: relative;
+        overflow: hidden;
+        background:
+            linear-gradient(135deg, rgba(123, 17, 19, 0.96), rgba(163, 32, 32, 0.9)),
+            radial-gradient(circle at 82% 18%, rgba(244, 201, 93, 0.42), transparent 24%);
+        color: #ffffff;
+        padding: 34px 36px;
+        border: 1px solid rgba(255, 255, 255, 0.42);
+        border-radius: 30px;
+        margin-bottom: 26px;
+        box-shadow: var(--shadow);
+        isolation: isolate;
+    }
+    .header-banner::after {
+        content: "";
+        position: absolute;
+        width: 230px;
+        height: 230px;
+        right: -82px;
+        top: -86px;
+        background: conic-gradient(from 120deg, rgba(244, 201, 93, 0.76), rgba(255, 255, 255, 0.16), transparent);
+        border-radius: 999px;
+        opacity: 0.72;
+        z-index: -1;
+    }
+    .eyebrow {
+        color: var(--up-gold);
+        font-size: 0.78rem;
+        font-weight: 850;
+        letter-spacing: 0.15em;
+        margin-bottom: 0.65rem;
+        text-transform: uppercase;
     }
     .header-banner h1 {
-        margin: 0 0 4px 0;
-        font-size: 1.5rem;
-        font-weight: 700;
-        color: white;
+        margin: 0 0 10px 0;
+        max-width: 620px;
+        font-size: clamp(2.05rem, 6vw, 4.15rem);
+        font-weight: 900;
+        letter-spacing: -0.065em;
+        line-height: 0.95;
+        color: #ffffff;
     }
     .header-banner p {
         margin: 0;
-        font-size: 0.9rem;
-        opacity: 0.85;
-        color: white;
+        max-width: 590px;
+        font-size: 1rem;
+        line-height: 1.65;
+        color: rgba(255, 255, 255, 0.84);
+    }
+    .hero-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 22px;
+    }
+    .hero-pill {
+        background: rgba(255, 255, 255, 0.12);
+        border: 1px solid rgba(255, 255, 255, 0.24);
+        border-radius: 999px;
+        color: rgba(255, 255, 255, 0.9);
+        font-size: 0.8rem;
+        font-weight: 700;
+        padding: 8px 12px;
     }
 
     .chat-area {
         display: flex;
         flex-direction: column;
-        gap: 12px;
-        margin-bottom: 24px;
+        gap: 16px;
+        margin: 10px 0 24px;
+        padding: 24px;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 28px;
+        box-shadow: 0 18px 44px rgba(99, 53, 31, 0.08);
+        backdrop-filter: blur(18px);
     }
 
     .msg-row-user {
@@ -88,11 +223,11 @@ st.markdown(
     }
 
     .bubble {
-        max-width: 72%;
-        padding: 12px 16px;
-        border-radius: 16px;
-        font-size: 0.92rem;
-        line-height: 1.6;
+        max-width: min(720px, 78vw);
+        padding: 14px 17px;
+        border-radius: 20px;
+        font-size: 0.96rem;
+        line-height: 1.65;
         text-align: left;
         white-space: pre-wrap;
         overflow-wrap: anywhere;
@@ -100,61 +235,108 @@ st.markdown(
         display: block;
     }
     .bubble-user {
-        background-color: #7b1113;
+        background: linear-gradient(135deg, var(--up-maroon), var(--up-maroon-2));
         color: #ffffff;
-        border-radius: 16px 16px 4px 16px;
+        border-radius: 22px 22px 6px 22px;
+        box-shadow: 0 14px 28px rgba(123, 17, 19, 0.22);
     }
     .bubble-assistant {
-        background-color: #ffffff;
-        color: #1a1a1a;
-        border-radius: 16px 16px 16px 4px;
-        border: 1px solid #ddd;
-        box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+        background-color: rgba(255, 255, 255, 0.92);
+        color: var(--ink);
+        border-radius: 22px 22px 22px 6px;
+        border: 1px solid rgba(123, 17, 19, 0.1);
+        box-shadow: 0 12px 30px rgba(70, 43, 30, 0.08);
+    }
+    .bubble strong {
+        font-weight: 850;
+    }
+    .bubble em {
+        font-style: italic;
     }
 
     .sender-label {
-        font-size: 0.75rem;
-        font-weight: 600;
+        font-size: 0.73rem;
+        font-weight: 800;
+        letter-spacing: 0.08em;
         margin-bottom: 4px;
-        color: #888;
+        color: var(--muted);
+        text-transform: uppercase;
     }
     .sender-label-user {
         text-align: right;
-        color: #7b1113;
+        color: var(--up-maroon);
     }
 
+    .suggest-panel {
+        background: rgba(255, 250, 241, 0.72);
+        border: 1px solid var(--line);
+        border-radius: 26px;
+        box-shadow: 0 18px 44px rgba(99, 53, 31, 0.08);
+        margin-top: 10px;
+        padding: 18px;
+        backdrop-filter: blur(18px);
+    }
     .suggest-title {
-        font-size: 0.82rem;
-        color: #888;
-        margin-bottom: 8px;
-        font-weight: 500;
+        color: var(--muted);
+        font-size: 0.8rem;
+        font-weight: 850;
+        letter-spacing: 0.1em;
+        margin: 0 0 12px;
+        text-transform: uppercase;
     }
     div[data-testid="column"] .stButton > button {
-        background-color: #ffffff;
-        color: #7b1113;
-        border: 1px solid #c8a0a0;
-        border-radius: 20px;
-        font-size: 0.82rem;
-        padding: 6px 12px;
+        background-color: rgba(255, 255, 255, 0.78);
+        color: var(--up-maroon);
+        border: 1px solid rgba(123, 17, 19, 0.14);
+        border-radius: 18px;
+        box-shadow: 0 10px 22px rgba(78, 45, 24, 0.06);
+        font-size: 0.88rem;
+        font-weight: 700;
+        padding: 0.86rem 1rem;
         width: 100%;
         text-align: left;
         cursor: pointer;
-        transition: background 0.2s;
+        transition: transform 0.18s ease, background 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
     }
     div[data-testid="column"] .stButton > button:hover {
-        background-color: #f7eded;
-        border-color: #7b1113;
+        background-color: #ffffff;
+        border-color: rgba(123, 17, 19, 0.42);
+        box-shadow: 0 14px 28px rgba(123, 17, 19, 0.12);
+        transform: translateY(-2px);
     }
 
     .stChatInput {
-        border-top: 1px solid #ddd;
-        padding-top: 12px;
+        background: transparent;
     }
     .stChatInput textarea {
         background-color: #ffffff !important;
-        color: #1a1a1a !important;
-        border: 1px solid #ccc !important;
-        border-radius: 24px !important;
+        color: var(--ink) !important;
+        border: 1px solid rgba(123, 17, 19, 0.22) !important;
+        border-radius: 999px !important;
+        box-shadow: 0 12px 32px rgba(77, 45, 25, 0.12) !important;
+        min-height: 54px !important;
+    }
+    .stChatInput textarea:focus {
+        border-color: rgba(123, 17, 19, 0.55) !important;
+    }
+
+    @media (max-width: 700px) {
+        .block-container {
+            padding-top: 24px;
+            padding-left: 18px;
+            padding-right: 18px;
+        }
+        .header-banner {
+            border-radius: 24px;
+            padding: 28px 24px;
+        }
+        .chat-area {
+            border-radius: 22px;
+            padding: 16px;
+        }
+        .bubble {
+            max-width: 88vw;
+        }
     }
 </style>
 """,
@@ -177,21 +359,38 @@ if "system_prompt" not in st.session_state:
 
 
 with st.sidebar:
-    st.markdown("## UP Mindanao")
-    st.markdown("### AI Assistant")
+    st.markdown(
+        """
+<div class="sidebar-kicker">UP Mindanao</div>
+<div class="sidebar-title">AI Assistant</div>
+""",
+        unsafe_allow_html=True,
+    )
     st.markdown("---")
 
-    st.markdown("**About**")
     st.markdown(
-        "This assistant answers questions about UP Mindanao - "
-        "programs, admission, student services, and more."
+        """
+<div class="sidebar-card">
+    <strong>About</strong>
+    <p>This assistant answers questions about UP Mindanao programs, admission, student services, and campus life.</p>
+</div>
+""",
+        unsafe_allow_html=True,
     )
 
-    st.markdown("---")
-    st.markdown("**Knowledge Sources**")
-    st.markdown("- Core university facts")
-    st.markdown("- UP Mindanao website")
-    st.markdown("- Uploaded documents")
+    st.markdown(
+        """
+<div class="sidebar-card">
+    <strong>Knowledge Sources</strong>
+    <ul>
+        <li>Core university facts</li>
+        <li>UP Mindanao website</li>
+        <li>Uploaded documents</li>
+    </ul>
+</div>
+""",
+        unsafe_allow_html=True,
+    )
 
     st.markdown("---")
 
@@ -209,8 +408,14 @@ with st.sidebar:
 st.markdown(
     """
 <div class="header-banner">
+    <div class="eyebrow">Campus answers, faster</div>
     <h1>UP Mindanao AI Assistant</h1>
-    <p>Ask me anything about programs, admission, and student life.</p>
+    <p>Ask about programs, admission, tuition, services, and student life with answers grounded in the local knowledge base.</p>
+    <div class="hero-meta">
+        <span class="hero-pill">Admissions</span>
+        <span class="hero-pill">Academics</span>
+        <span class="hero-pill">Student Services</span>
+    </div>
 </div>
 """,
     unsafe_allow_html=True,
@@ -228,7 +433,11 @@ SUGGESTED = [
 
 
 def render_bubble(content: str) -> str:
-    return html.escape(content).replace("\n", "<br>")
+    escaped = html.escape(content)
+    escaped = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", escaped)
+    escaped = re.sub(r"__(.+?)__", r"<strong>\1</strong>", escaped)
+    escaped = re.sub(r"(?<!\*)\*(?!\s)(.+?)(?<!\s)\*(?!\*)", r"<em>\1</em>", escaped)
+    return escaped.replace("\n", "<br>")
 
 
 typed = st.chat_input("Ask about UP Mindanao...")
@@ -236,7 +445,10 @@ if typed:
     st.session_state.pending_prompt = typed
 
 if not st.session_state.messages and not st.session_state.active_prompt:
-    st.markdown('<p class="suggest-title">Try asking:</p>', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="suggest-panel"><p class="suggest-title">Try asking</p></div>',
+        unsafe_allow_html=True,
+    )
     col1, col2 = st.columns(2)
     for i, q in enumerate(SUGGESTED):
         with col1 if i % 2 == 0 else col2:
